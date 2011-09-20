@@ -1,22 +1,22 @@
 {% extends "admin/base_site.html" %}
 
 <!-- LOADING -->
-{% load i18n l10n adminmedia fb_tags %}
+{% load i18n l10n static fb_tags %}
 
 <!-- STYLESHEETS -->
-{% block stylesheets %}
+{% block extrastyle %}
     {{ block.super }}
-    <link rel="stylesheet" type="text/css" href="{% admin_media_prefix %}css/forms.css" />
+    <link rel="stylesheet" type="text/css" href="{% get_static_prefix %}admin/css/forms.css" />
     <link rel="stylesheet" type="text/css" href="{{ settings_var.URL_FILEBROWSER_MEDIA }}css/filebrowser.css" />
 {% endblock %}
 
 <!-- JAVASCRIPTS -->
-{% block javascripts %}
+{% block extrahead %}
     {{ block.super }}
     <script type="text/javascript" src="../../jsi18n/"></script>
     <script type="text/javascript" src="{{ settings_var.URL_FILEBROWSER_MEDIA }}js/fileuploader.js"></script>
     <script type="text/javascript">
-    (function($){
+	(function($){
         $(document).ready(function() {
             $("div#content .collapse").grp_collapsible({
                 on_init: function(elem, options) {
@@ -97,15 +97,15 @@
     <div class="form-container">
         <form>
             <fieldset class="module aligned">
-            <div class="row" id="file-uploader">
-                <noscript>
-                    Please enable Javascript to upload files.
-                </noscript>
-            </div>
+                <div class="form-row" id="file-uploader">
+                    <noscript>
+                        Please enable Javascript to upload files.
+                    </noscript>
+                </div>
             </fieldset>
             <fieldset class="module collapse closed">
                 <h2 class="collapse-handler">{% trans "Help" %}</h2>
-                <div class="row">
+                <div class="form-row">
                     {% for extension in settings_var.EXTENSIONS.items %}
                         {% ifnotequal extension.0 'Folder' %}
                             <div class="column span-4"><label class="required">{% if forloop.first %}{% trans "Allowed" %}:{% else %}&nbsp;{% endif %}</label></div>
@@ -113,18 +113,22 @@
                         {% endifnotequal %}
                     {% endfor %}
                 </div>
-                <div class="row">
+                <div class="form-row">
                     <div class="column span-4"><label class="required">{% trans "Max. Filesize" %}:</label></div>
                     <div class="column span-12 last"><p>{{ settings_var.MAX_UPLOAD_SIZE|filesizeformat }}</p></div><br clear="all" />
                 </div>
                 {% if settings_var.CONVERT_FILENAME %}
-                    <div class="row">
+                    <div class="form-row">
                         <div class="column span-16 last"><p>
                             {% trans "The Name will be converted to lowercase. Spaces will be replaced with underscores." %}
                         </p></div><br clear="all" />
                     </div>
                 {% endif %}
             </fieldset>
+            <!--<div class="submit-row">
+                 <input class="cancel-link" type="button" value="{% trans "Clear Queue" %}" />
+                 <input class="default" type="submit" name="_save" value='{% trans "Upload" %}' />
+            </div>-->
         </form>
     </div>
 </div>
