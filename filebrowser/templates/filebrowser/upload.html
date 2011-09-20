@@ -14,24 +14,10 @@
 {% block extrahead %}
     {{ block.super }}
     <script type="text/javascript" src="../../jsi18n/"></script>
+	<script type="text/javascript" src="{% get_static_prefix %}admin/js/jquery.min.js"></script>
+	<script type="text/javascript" src="{% get_static_prefix %}admin/js/jquery.init.js"></script>
     <script type="text/javascript" src="{{ settings_var.URL_FILEBROWSER_MEDIA }}js/fileuploader.js"></script>
     <script type="text/javascript">
-	(function($){
-        $(document).ready(function() {
-            $("div#content .collapse").grp_collapsible({
-                on_init: function(elem, options) {
-                    // open collapse (and all collapse parents) in case of errors
-                    if (elem.find("ul.errorlist").length > 0) {
-                        elem.removeClass("closed")
-                            .addClass("open");
-                        elem.parents(".collapse")
-                            .removeClass("closed")
-                            .addClass("open");
-                    }
-                }
-            });
-        });
-    })(django.jQuery);
     (function($){
         $(document).ready(function() {
             var uploader = new qq.FileUploader({
