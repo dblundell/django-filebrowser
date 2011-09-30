@@ -30,7 +30,7 @@
 	{% if filelisting %}
         <ul>
             {% for item in filelisting %}
-                <li>{{ item.path_relative }}</li>
+                <li>{{ item.path_relative_directory }}</li>
             {% endfor %}
         </ul>
     {% endif %}
