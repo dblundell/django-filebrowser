@@ -39,15 +39,11 @@ class FileBrowseWidget(Input):
         super(FileBrowseWidget, self).__init__(attrs)
     
     def render(self, name, value, attrs=None):
-        if self.site:
-            name = self.site.name + ":fb_browse"
-            url = urlresolvers.reverse(name)
-        else:
-            url = urlresolvers.reverse('filebrowser:fb_browse')
+        url = urlresolvers.reverse(self.site.name + ":fb_browse")
         if value is None:
             value = ""
         if value != "" and not isinstance(value, FileObject):
-            value = FileObject(url_to_path(value))
+            value = FileObject(url_to_path(value), directory=self.site.directory)
         final_attrs = self.build_attrs(attrs, type=self.input_type, name=name)
         final_attrs['search_icon'] = URL_FILEBROWSER_MEDIA + 'img/filebrowser_icon_show.gif'
         final_attrs['url'] = url
@@ -57,10 +53,7 @@ class FileBrowseWidget(Input):
         final_attrs['ADMIN_THUMBNAIL'] = ADMIN_THUMBNAIL
         if value != "":
             try:
-                if value.is_version and VERSIONS_BASEDIR:
-                    final_attrs['directory'] = os.path.split(value.original.path_relative)[0]
-                else:
-                    final_attrs['directory'] = os.path.split(value.path_relative)[0]
+                final_attrs['directory'] = os.path.split(value.original.path_relative_directory)[0]
             except:
                 pass
         return render_to_string("filebrowser/custom_field.html", locals())
@@ -97,7 +90,7 @@ class FileBrowseField(CharField):
     __metaclass__ = models.SubfieldBase
     
     def __init__(self, *args, **kwargs):
-        self.site = kwargs.pop('site', '')
+        self.site = kwargs.pop('site', site)
         self.directory = kwargs.pop('directory', '')
         self.extensions = kwargs.pop('extensions', '')
         self.format = kwargs.pop('format', '')
@@ -106,9 +99,15 @@ class FileBrowseField(CharField):
     def to_python(self, value):
         if not value or isinstance(value, FileObject):
             return value
-        return FileObject(url_to_path(value))
+        return FileObject(url_to_path(value), directory=self.site.directory)
     
     def get_db_prep_value(self, value, connection, prepared=False):
+        if not value:
+            return value
+        return value.url_save
+
+    def value_to_string(self, obj):
+        value = self._get_val_from_obj(obj)
         if not value:
             return value
         return value.url_save
