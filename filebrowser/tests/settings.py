@@ -7,7 +7,7 @@ import os
 from django.test import TestCase
 from django.contrib.auth.models import User
 
-# PYTHON IMPORTS
+# FILEBROWSER IMPORTS
 from filebrowser.settings import *
 
 
@@ -27,6 +27,8 @@ class SettingsTests(TestCase):
         Test that ``MEDIA_ROOT`` plus ``DIRECTORY`` exists.
         """
         self.assertEqual(os.path.exists(os.path.join(MEDIA_ROOT,DIRECTORY)), 1)
+        # Check for trailing slash
+        self.assertEqual(os.path.basename(DIRECTORY), '')
     
     def test_path_filebrowser_media(self):
         """

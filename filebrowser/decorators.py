@@ -1,13 +1,13 @@
 # coding: utf-8
 
-# django imports
+# DJANGO IMPORTS
 from django.http import HttpResponseRedirect
 from django.utils.translation import ugettext as _
 from django.core.urlresolvers import reverse
 from django.contrib import messages
 from django.core.exceptions import ImproperlyConfigured
 
-# filebrowser imports
+# FILEBROWSER IMPORTS
 from filebrowser.functions import get_path, get_file
 from filebrowser.templatetags.fb_tags import query_helper
 
@@ -18,10 +18,10 @@ def path_exists(site, function):
     """
     
     def decorator(request, *args, **kwargs):
-        if get_path('', directory=site.directory) == None:
+        if get_path('', site=site) == None:
             # The DIRECTORY does not exist, raise an error to prevent eternal redirecting.
             raise ImproperlyConfigured, _("Error finding Upload-Folder (MEDIA_ROOT + DIRECTORY). Maybe it does not exist?")
-        if get_path(request.GET.get('dir', ''), directory=site.directory) == None:
+        if get_path(request.GET.get('dir', ''), site=site) == None:
             msg = _('The requested Folder does not exist.')
             messages.add_message(request, messages.ERROR, msg)
             redirect_url = reverse("filebrowser:fb_browse", current_app=site.name) + query_helper(request.GET, "", "dir")
@@ -36,7 +36,7 @@ def file_exists(site, function):
     """
     
     def decorator(request, *args, **kwargs):
-        file_path = get_file(request.GET.get('dir', ''), request.GET.get('filename', ''), directory=site.directory)
+        file_path = get_file(request.GET.get('dir', ''), request.GET.get('filename', ''), site=site)
         if file_path == None:
             msg = _('The requested File does not exist.')
             messages.add_message(request, messages.ERROR, msg)

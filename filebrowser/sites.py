@@ -1,9 +1,10 @@
 # coding: utf-8
 
-# general imports
+# PYTHON IMPORTS
 import os, re
+from types import MethodType
 
-# django imports
+# DJANGO IMPORTS
 from django.shortcuts import render_to_response, HttpResponse
 from django.template import RequestContext as Context
 from django.http import HttpResponseRedirect
@@ -18,13 +19,20 @@ from django.utils.encoding import smart_unicode
 from django.contrib import messages
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage, FileSystemStorage
+from django.core.exceptions import ImproperlyConfigured
 
-# filebrowser imports
+# FILEBROWSER IMPORTS
 from filebrowser.settings import *
 from filebrowser.functions import get_breadcrumbs, get_filterdate, get_settings_var, handle_file_upload, convert_filename
 from filebrowser.templatetags.fb_tags import query_helper
 from filebrowser.base import FileListing, FileObject
 from filebrowser.decorators import path_exists, file_exists
+from filebrowser.storage import FileSystemStorageMixin, StorageMixin
+
+# Add some required methods to FileSystemStorage
+if FileSystemStorageMixin not in FileSystemStorage.__bases__:
+    FileSystemStorage.__bases__ += (FileSystemStorageMixin,)
 
 # PIL import
 if STRICT_PIL:
@@ -44,6 +52,7 @@ except ImportError:
 # This cache contains all *instantiated* FileBrowser sites
 _sites_cache = {}
 
+
 def get_site_dict(app_name='filebrowser'):
     """
     Return a dict with all *deployed* FileBrowser sites that have 
@@ -56,6 +65,7 @@ def get_site_dict(app_name='filebrowser'):
     # Get the deployed subset from the cache
     return dict((k,v) for k, v in _sites_cache[app_name].iteritems() if k in deployed)
 
+
 def register_site(app_name, site_name, site):
     """
     Add a site into the site dict.
@@ -64,17 +74,51 @@ def register_site(app_name, site_name, site):
         _sites_cache[app_name] = {}
     _sites_cache[app_name][site_name] = site
 
+
+def get_default_site(app_name='filebrowser'):
+    """
+    Returns the default site. This function uses Django's url resolution method to
+    obtain the name of the default site.
+    """
+    # Get the name of the default site:
+    resolver = get_resolver(get_urlconf())
+    name = 'filebrowser'
+
+    # Django's default name resolution method (see django.core.urlresolvers.reverse())
+    app_list = resolver.app_dict[app_name]
+    if not name in app_list:
+        name = app_list[0]
+    
+    return get_site_dict()[name]
+
+
 class FileBrowserSite(object):
 
-    def __init__(self, name=None, app_name='filebrowser'):
+    def __init__(self, name=None, app_name='filebrowser', storage=default_storage):
         self.name = name
         self.app_name = app_name
+        self.storage = storage
+        
         self._actions = {}
         self._global_actions = self._actions.copy()
+
         # Register this site in the global site cache
         register_site(self.app_name, self.name, self)
+        
         # Per-site settings:
         self.directory = DIRECTORY
+    
+    def _directory_get(self):
+        return self._directory
+    
+    def _directory_set(self, val):
+        if os.path.basename(val): # There's a trailing slash missing
+            raise ImproperlyConfigured("Directory '%(dir)s' for the site %(app_name)s.%(name)s does not end with a trailing slash." % {'dir': val, 'app_name': self.app_name, 'name': self.name})
+        if not self.storage.exists(val):
+            raise ImproperlyConfigured("Directory '%(dir)s' for the site %(app_name)s.%(name)s does not exist." % {'dir': val, 'app_name': self.app_name, 'name': self.name})
+        self._directory = val
+
+    directory = property(_directory_get, _directory_set)
 
     def filebrowser_view(self, view):
         return staff_member_required(never_cache(view))
@@ -173,13 +217,13 @@ class FileBrowserSite(object):
             return True
         
         query = request.GET.copy()
-        abs_path = u'%s' % os.path.join(MEDIA_ROOT, self.directory, query.get('dir', ''))
+        path = u'%s' % os.path.join(self.directory, query.get('dir', ''))
         
-        filelisting = FileListing(abs_path,
+        filelisting = FileListing(path,
             filter_func=filter_browse,
             sorting_by=query.get('o', DEFAULT_SORTING_BY),
             sorting_order=query.get('ot', DEFAULT_SORTING_ORDER),
-            directory=self.directory)
+            site=self)
         
         files = []
         if SEARCH_TRAVERSE and query.get("q"):
@@ -226,7 +270,7 @@ class FileBrowserSite(object):
             'settings_var': get_settings_var(directory=self.directory),
             'breadcrumbs': get_breadcrumbs(query, query.get('dir', '')),
             'breadcrumbs_title': "",
-            'directory': self.directory,
+            'site': self
         }, context_instance=Context(request, current_app=self.name))
     
     # mkdir signals
@@ -239,17 +283,18 @@ class FileBrowserSite(object):
         """
         from filebrowser.forms import CreateDirForm
         query = request.GET
-        abs_path = u'%s' % os.path.join(MEDIA_ROOT, self.directory, query.get('dir', ''))
+        path = u'%s' % os.path.join(self.directory, query.get('dir', ''))
         
         if request.method == 'POST':
-            form = CreateDirForm(abs_path, request.POST)
+            form = CreateDirForm(path, request.POST, site=self)
             if form.is_valid():
-                abs_server_path = os.path.join(abs_path, form.cleaned_data['name'])
+                server_path = os.path.join(path, form.cleaned_data['name'])
                 try:
-                    self.filebrowser_pre_createdir.send(sender=request, path=abs_server_path, name=form.cleaned_data['name'])
-                    os.mkdir(abs_server_path)
-                    os.chmod(abs_server_path, 0775) # ??? PERMISSIONS
-                    self.filebrowser_post_createdir.send(sender=request, path=abs_server_path, name=form.cleaned_data['name'])
+                    self.filebrowser_pre_createdir.send(sender=request, path=server_path, name=form.cleaned_data['name'])
+                    self.storage.makedirs(server_path)
+                    # os.mkdir(server_path)
+                    # os.chmod(server_path, 0775) # ??? PERMISSIONS
+                    self.filebrowser_post_createdir.send(sender=request, path=server_path, name=form.cleaned_data['name'])
                     messages.add_message(request, messages.SUCCESS, _('The Folder %s was successfully created.') % form.cleaned_data['name'])
                     redirect_url = reverse("filebrowser:fb_browse", current_app=self.name) + query_helper(query, "ot=desc,o=date", "ot,o,filter_type,filter_date,q,p")
                     return HttpResponseRedirect(redirect_url)
@@ -259,7 +304,7 @@ class FileBrowserSite(object):
                     else:
                         form.errors['name'] = forms.util.ErrorList([_('Error creating folder.')])
         else:
-            form = CreateDirForm(abs_path)
+            form = CreateDirForm(path, site=self)
         
         return render_to_response('filebrowser/createdir.html', {
             'form': form,
@@ -268,7 +313,7 @@ class FileBrowserSite(object):
             'settings_var': get_settings_var(directory=self.directory),
             'breadcrumbs': get_breadcrumbs(query, query.get('dir', '')),
             'breadcrumbs_title': _(u'New Folder'),
-            'directory': self.directory,
+            'site': self
         }, context_instance=Context(request, current_app=self.name))
     
 
@@ -277,7 +322,7 @@ class FileBrowserSite(object):
         Multipe File Upload.
         """
         query = request.GET
-        abs_path = u'%s' % os.path.join(MEDIA_ROOT, self.directory, query.get('dir', ''))
+        path = u'%s' % os.path.join(self.directory, query.get('dir', ''))
         
         return render_to_response('filebrowser/upload.html', {
             'query': query,
@@ -285,7 +330,7 @@ class FileBrowserSite(object):
             'settings_var': get_settings_var(directory=self.directory),
             'breadcrumbs': get_breadcrumbs(query, query.get('dir', '')),
             'breadcrumbs_title': _(u'Upload'),
-            'directory': self.directory,
+            'site': self
         }, context_instance=Context(request, current_app=self.name))
 
     def delete_confirm(self, request):
@@ -293,13 +338,13 @@ class FileBrowserSite(object):
         Delete existing File/Directory.
         """
         query = request.GET
-        abs_path = u'%s' % os.path.join(MEDIA_ROOT, self.directory, query.get('dir', ''))
-        fileobject = FileObject(os.path.join(abs_path, query.get('filename', '')), directory=self.directory)
+        path = u'%s' % os.path.join(self.directory, query.get('dir', ''))
+        fileobject = FileObject(os.path.join(path, query.get('filename', '')), site=self)
         if fileobject.filetype == "Folder":
-            filelisting = FileListing(os.path.join(abs_path, fileobject.filename),
+            filelisting = FileListing(os.path.join(path, fileobject.filename),
                 sorting_by=query.get('o', 'filename'),
                 sorting_order=query.get('ot', DEFAULT_SORTING_ORDER),
-                directory=self.directory)
+                site=self)
             filelisting = filelisting.files_walk_total()
             if len(filelisting) > 100:
                 additional_files = len(filelisting) - 100
@@ -319,7 +364,7 @@ class FileBrowserSite(object):
             'settings_var': get_settings_var(directory=self.directory),
             'breadcrumbs': get_breadcrumbs(query, query.get('dir', '')),
             'breadcrumbs_title': _(u'Confirm delete'),
-            'directory': self.directory,
+            'site': self
         }, context_instance=Context(request, current_app=self.name))
 
     # delete signals
@@ -331,8 +376,8 @@ class FileBrowserSite(object):
         Delete existing File/Directory.
         """
         query = request.GET
-        abs_path = u'%s' % os.path.join(MEDIA_ROOT, self.directory, query.get('dir', ''))
-        fileobject = FileObject(os.path.join(abs_path, query.get('filename', '')), directory=self.directory)
+        path = u'%s' % os.path.join(self.directory, query.get('dir', ''))
+        fileobject = FileObject(os.path.join(path, query.get('filename', '')), site=self)
         
         if request.GET:
             try:
@@ -362,11 +407,11 @@ class FileBrowserSite(object):
         """
         from filebrowser.forms import ChangeForm
         query = request.GET
-        abs_path = u'%s' % os.path.join(MEDIA_ROOT, self.directory, query.get('dir', ''))
-        fileobject = FileObject(os.path.join(abs_path, query.get('filename', '')), directory=self.directory)
+        path = u'%s' % os.path.join(self.directory, query.get('dir', ''))
+        fileobject = FileObject(os.path.join(path, query.get('filename', '')), site=self)
         
         if request.method == 'POST':
-            form = ChangeForm(request.POST, path=abs_path, fileobject=fileobject, site=self)
+            form = ChangeForm(request.POST, path=path, fileobject=fileobject, site=self)
             if form.is_valid():
                 new_name = form.cleaned_data['name']
                 action_name = form.cleaned_data['custom_action']
@@ -383,7 +428,7 @@ class FileBrowserSite(object):
                     if new_name != fileobject.filename:
                         self.filebrowser_pre_rename.send(sender=request, path=fileobject.path, name=fileobject.filename, new_name=new_name)
                         fileobject.delete_versions()
-                        os.rename(fileobject.path, os.path.join(fileobject.head, new_name))
+                        self.storage.rename(fileobject.path, os.path.join(fileobject.head, new_name))
                         self.filebrowser_post_rename.send(sender=request, path=fileobject.path, name=fileobject.filename, new_name=new_name)
                         messages.add_message(request, messages.SUCCESS, _('Renaming was successful.'))
                     if isinstance(action_response, HttpResponse):
@@ -396,7 +441,7 @@ class FileBrowserSite(object):
                 except OSError, (errno, strerror):
                     form.errors['name'] = forms.util.ErrorList([_('Error.')])
         else:
-            form = ChangeForm(initial={"name": fileobject.filename}, path=abs_path, fileobject=fileobject, site=self)
+            form = ChangeForm(initial={"name": fileobject.filename}, path=path, fileobject=fileobject, site=self)
         
         return render_to_response('filebrowser/detail.html', {
             'form': form,
@@ -406,7 +451,7 @@ class FileBrowserSite(object):
             'settings_var': get_settings_var(directory=self.directory),
             'breadcrumbs': get_breadcrumbs(query, query.get('dir', '')),
             'breadcrumbs_title': u'%s' % fileobject.filename,
-            'directory': self.directory,
+            'site': self
         }, context_instance=Context(request, current_app=self.name))
 
     def version(self, request):
@@ -414,14 +459,14 @@ class FileBrowserSite(object):
         Version detail.
         """
         query = request.GET
-        abs_path = u'%s' % os.path.join(MEDIA_ROOT, self.directory, query.get('dir', ''))
-        fileobject = FileObject(os.path.join(abs_path, query.get('filename', '')), directory=self.directory)
+        path = u'%s' % os.path.join(self.directory, query.get('dir', ''))
+        fileobject = FileObject(os.path.join(path, query.get('filename', '')), site=self)
         
         return render_to_response('filebrowser/version.html', {
             'fileobject': fileobject,
             'query': query,
             'settings_var': get_settings_var(directory=self.directory),
-            'directory': self.directory,
+            'site': self
         }, context_instance=Context(request, current_app=self.name))
 
     # upload signals
@@ -432,8 +477,6 @@ class FileBrowserSite(object):
         """
         Upload file to the server.
         """
-        from django.core.files.move import file_move_safe
-
         if request.method == "POST":
             if request.is_ajax(): # Advanced (AJAX) submission
                 folder = request.GET.get('folder')
@@ -455,15 +498,25 @@ class FileBrowserSite(object):
             fb_uploadurl_re = re.compile(r'^.*(%s)' % reverse("filebrowser:fb_upload", current_app=self.name))
             folder = fb_uploadurl_re.sub('', folder)
 
-            abs_path = os.path.join(MEDIA_ROOT, self.directory, folder)
+            path = os.path.join(self.directory, folder)
+            file_name = os.path.join(path, filedata.name)
+            file_already_exists = self.storage.exists(file_name)
+
+            # Is for name collision with a directory
+            if file_already_exists and self.storage.isdir(file_name):
+                ret_json = {'success': False, 'filename': filedata.name}
+                return HttpResponse(json.dumps(ret_json)) 
+            
             self.filebrowser_pre_upload.send(sender=request, path=request.POST.get('folder'), file=filedata)
-            uploadedfile = handle_file_upload(abs_path, filedata)
-            # if file already exists
-            if os.path.isfile(smart_unicode(os.path.join(MEDIA_ROOT, self.directory, folder, filedata.name))):
-                old_file = smart_unicode(os.path.join(abs_path, filedata.name))
-                new_file = smart_unicode(os.path.join(abs_path, uploadedfile))
-                file_move_safe(new_file, old_file, allow_overwrite=True)
-            self.filebrowser_post_upload.send(sender=request, path=request.POST.get('folder'), file=FileObject(smart_unicode(os.path.join(self.directory, folder, filedata.name)), directory=self.directory))
+            uploadedfile = handle_file_upload(path, filedata, site=self)
+            
+            if file_already_exists:
+                old_file = smart_unicode(file_name)
+                new_file = smart_unicode(uploadedfile)
+                self.storage.move(new_file, old_file, allow_overwrite=True)
+            
+            self.filebrowser_post_upload.send(sender=request, path=request.POST.get('folder'), file=FileObject(smart_unicode(file_name), site=self))
+            
             # let Ajax Upload know whether we saved it or not
             ret_json = {'success': True, 'filename': filedata.name}
             return HttpResponse(json.dumps(ret_json))
@@ -478,3 +531,5 @@ site.add_action(flip_vertical)
 site.add_action(rotate_90_clockwise)
 site.add_action(rotate_90_counterclockwise)
 site.add_action(rotate_180)
+
+

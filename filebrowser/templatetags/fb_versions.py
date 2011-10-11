@@ -1,19 +1,19 @@
 # coding: utf-8
 
-# imports
+# PYTHON IMPORTS
 import os, re
 from time import gmtime
 
-# django imports
+# DJANGO IMPORTS
 from django.template import Library, Node, Variable, VariableDoesNotExist, TemplateSyntaxError
 from django.conf import settings
 from django.utils.encoding import force_unicode, smart_str
 
-# filebrowser imports
+# FILEBROWSER IMPORTS
 from filebrowser.settings import DIRECTORY, VERSIONS
-from filebrowser.functions import path_to_url, get_version_path, version_generator
+from filebrowser.functions import get_version_path, version_generator
 from filebrowser.base import FileObject
-
+from filebrowser.sites import get_default_site
 register = Library()
 
 
@@ -38,17 +38,19 @@ class VersionNode(Node):
                 version_prefix = self.version_prefix_var.resolve(context)
             except VariableDoesNotExist:
                 return None
-        directory = context.get('directory', DIRECTORY)
+        site = context.get('site', get_default_site())
+        directory = site.directory
         try:
             if isinstance(source, FileObject):
+                site = source.site
                 source = source.path
             source = force_unicode(source)
-            version_path = get_version_path(source, version_prefix, directory=directory)
-            if not os.path.isfile(version_path):
-                version_path = version_generator(source, version_prefix, directory=directory)
-            elif os.path.getmtime(source) > os.path.getmtime(version_path):
-                version_path = version_generator(source, version_prefix, force=True, directory=directory)
-            return path_to_url(version_path)
+            version_path = get_version_path(source, version_prefix, site=site)
+            if not site.storage.isfile(version_path):
+                version_path = version_generator(source, version_prefix, site=site)
+            elif site.storage.modified_time(source) > site.storage.modified_time(version_path):
+                version_path = version_generator(source, version_prefix, force=True, site=site)
+            return site.storage.url(version_path)
         except:
             return ""
 
@@ -95,17 +97,19 @@ class VersionObjectNode(Node):
                 version_prefix = self.version_prefix_var.resolve(context)
             except VariableDoesNotExist:
                 return None
-        directory = context.get('directory', DIRECTORY)
+        site = context.get('site', get_default_site())
+        directory = site.directory
         try:
             if isinstance(source, FileObject):
+                site = source.site
                 source = source.path
             source = force_unicode(source)
-            version_path = get_version_path(source, version_prefix, directory=directory)
-            if not os.path.isfile(version_path):
-                version_path = version_generator(source, version_prefix, directory=directory)
-            elif os.path.getmtime(source) > os.path.getmtime(version_path):
-                version_path = version_generator(source, version_prefix, force=True, directory=directory)
-            context[self.var_name] = FileObject(version_path)
+            version_path = get_version_path(source, version_prefix, site=site)
+            if not site.storage.isfile(version_path):
+                version_path = version_generator(source, version_prefix, site=site)
+            elif site.storage.modified_time(source) > site.storage.modified_time(version_path):
+                version_path = version_generator(source, version_prefix, force=True, site=site)
+            context[self.var_name] = FileObject(version_path, site=site)
         except:
             context[self.var_name] = ""
         return ''
@@ -175,5 +179,4 @@ def version_setting(parser, token):
 register.tag(version)
 register.tag(version_object)
 register.tag(version_setting)
-
 
