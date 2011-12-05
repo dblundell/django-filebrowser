@@ -196,6 +196,10 @@ class FileObject():
     def __unicode__(self):
         return smart_unicode(self.filename)
     
+    @property
+    def name(self):
+        return self.path
+
     def __repr__(self):
         return "<%s: %s>" % (self.__class__.__name__, self or "None")
     
@@ -241,7 +245,7 @@ class FileObject():
     datetime = property(_datetime)
 
     def exists(self):
-        if self.storage.isdir or self.storage.isfile:
+        if self.storage.isdir(self.path) or self.storage.isfile(self.path):
             return True
         return False
     
@@ -279,6 +283,12 @@ class FileObject():
             return self.dimensions[1]
         return None
     height = property(_height)
+
+    def _aspectratio(self):
+        if self.dimensions:
+            return float(self.width)/float(self.height)
+        return None
+    aspectratio = property(_aspectratio)
     
     def _orientation(self):
         if self.dimensions:

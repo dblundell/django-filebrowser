@@ -34,6 +34,7 @@ PATH_TINYMCE = getattr(settings, "FILEBROWSER_PATH_TINYMCE", DEFAULT_PATH_TINYMC
 # EXTENSIONS AND FORMATS
 # Allowed Extensions for File Upload. Lower case is important.
 EXTENSIONS = getattr(settings, "FILEBROWSER_EXTENSIONS", {
+    'Folder': [''],
     'Image': ['.jpg','.jpeg','.gif','.png','.tif','.tiff'],
     'Document': ['.pdf','.doc','.rtf','.txt','.xls','.csv'],
     'Video': ['.mov','.wmv','.mpeg','.mpg','.avi','.rm'],
@@ -70,6 +71,14 @@ ADMIN_VERSIONS = getattr(settings, 'FILEBROWSER_ADMIN_VERSIONS', ['thumbnail', '
 # Which Version should be used as Admin-thumbnail.
 ADMIN_THUMBNAIL = getattr(settings, 'FILEBROWSER_ADMIN_THUMBNAIL', 'admin_thumbnail')
 
+# PLACEHOLDER
+# Path to placeholder image
+PLACEHOLDER = getattr(settings, "FILEBROWSER_PLACEHOLDER", "")
+# Show Placeholder if the original image does not exist
+SHOW_PLACEHOLDER = getattr(settings, "FILEBROWSER_SHOW_PLACEHOLDER", False)
+# Always show placeholder (even if the original image exists)
+FORCE_PLACEHOLDER = getattr(settings, "FILEBROWSER_FORCE_PLACEHOLDER", False)
+
 # EXTRA SETTINGS
 # If set to True, the FileBrowser will not try to import a mis-installed PIL.
 STRICT_PIL = getattr(settings, 'FILEBROWSER_STRICT_PIL', False)
@@ -98,7 +107,7 @@ DEFAULT_SORTING_ORDER = getattr(settings, "FILEBROWSER_DEFAULT_SORTING_ORDER", "
 # regex to clean dir names before creation
 FOLDER_REGEX = getattr(settings, "FILEBROWSER_FOLDER_REGEX", r'^[\w._/-]+$')
 # Traverse directories when searching
-SEARCH_TRAVERSE = getattr(settings, "FILEBROWSER_SEARCH_TRAVERSE", True)
+SEARCH_TRAVERSE = getattr(settings, "FILEBROWSER_SEARCH_TRAVERSE", False)
 # Default Upload and Version Permissions
 DEFAULT_PERMISSIONS = getattr(settings, "FILEBROWSER_DEFAULT_PERMISSIONS", 0755)
 
