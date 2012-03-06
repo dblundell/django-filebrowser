@@ -19,7 +19,7 @@ from django.utils.encoding import smart_unicode
 from django.contrib import messages
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.core.files.base import ContentFile
-from django.core.files.storage import default_storage, FileSystemStorage
+from django.core.files.storage import DefaultStorage, default_storage, FileSystemStorage
 from django.core.exceptions import ImproperlyConfigured
 
 # FILEBROWSER IMPORTS
@@ -112,10 +112,6 @@ class FileBrowserSite(object):
         return self._directory
     
     def _directory_set(self, val):
-        if os.path.basename(val): # There's a trailing slash missing
-            raise ImproperlyConfigured("Directory '%(dir)s' for the site %(app_name)s.%(name)s does not end with a trailing slash." % {'dir': val, 'app_name': self.app_name, 'name': self.name})
-        if not self.storage.exists(val):
-            raise ImproperlyConfigured("Directory '%(dir)s' for the site %(app_name)s.%(name)s does not exist." % {'dir': val, 'app_name': self.app_name, 'name': self.name})
         self._directory = val
 
     directory = property(_directory_get, _directory_set)
@@ -520,8 +516,11 @@ class FileBrowserSite(object):
             ret_json = {'success': True, 'filename': filedata.name}
             return HttpResponse(json.dumps(ret_json))
 
+storage = DefaultStorage()
+storage.location = MEDIA_ROOT
+storage.base_url = MEDIA_URL
 # Default FileBrowser site
-site = FileBrowserSite(name='filebrowser')
+site = FileBrowserSite(name='filebrowser', storage=storage)
 
 # Default actions
 from actions import *
