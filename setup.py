@@ -8,7 +8,7 @@ def read(fname):
 setup(
     name='django-filebrowser',
     version='3.4.3',
-    description='Media-Management with Grappelli',
+    description='Media-Management with django admin',
     long_description = read('README.rst'),
     author='Patrick Kranzlmueller, Axel Swoboda, Vaclav Mikolasek (vonautomatisch)',
     author_email='office@vonautomatisch.at',
@@ -27,6 +27,5 @@ setup(
     ],
     zip_safe = False,
     install_requires = [
-        'django-grappelli >= 2.3.7',
     ],
 )
