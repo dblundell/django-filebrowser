@@ -24,6 +24,21 @@ First you need to know which versions/sizes of an image you´d like to use on yo
         'large': {'verbose_name': 'Large (8 col)', 'width': 680, 'height': '', 'opts': ''},
       })
 
+.. versionadded:: 3.4.0
+    ``methods``
+
+If you need to add some filter for the version (like grayscale, sepia, ...), you can also use the ``methods`` argument::
+
+    def grayscale(im):
+        '''Convert the PIL image to grayscale'''
+        if im.mode != "L":
+            im = im.convert("L")
+        return im
+
+    FILEBROWSER_VERSIONS = {
+        'big': {'verbose_name': 'Big (6 col)', 'width': 460, 'height': '', 'opts': '', 'methods': [grayscale]},
+    })
+
 Versions with the admin-interface
 ---------------------------------
 
@@ -44,7 +59,7 @@ A Model example::
 
     from filebrowser.fields import FileBrowseField
 
-    class MyModel(models.Model):
+    class BlogEntry(models.Model):
         image = FileBrowseField("Image", max_length=200, blank=True, null=True)
 
 First you need to load the templatetags with::
@@ -61,26 +76,26 @@ Templatetag ``version``
 
 **Generate a version and retrieve the URL**::
 
-    {% version model.field_name.path version_prefix %}
+    {% version model.field_name version_prefix %}
 
 With the above Model, in order to generate a version you type::
 
-    {% version blogentry.image.path 'medium' %}
+    {% version blogentry.image 'medium' %}
 
 Since you retrieve the URL, you can display the image with::
 
-    <img src="{% version blogentry.image.path 'medium' %}" />
+    <img src="{% version blogentry.image 'medium' %}" />
 
 Templatetag ``version_object``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Generate a version and retrieve the FileObject**::
 
-    {% version_object model.field_name.path version_prefix as variable %}
+    {% version_object model.field_name version_prefix as variable %}
 
 With the above Model, in order to generate a version you type::
 
-    {% version_object blogentry.image.path 'medium' as version_medium %} 
+    {% version_object blogentry.image 'medium' as version_medium %} 
 
 Since you retrieve a ``FileObject``, you can use all attributes::
 
@@ -100,7 +115,14 @@ If you have a ``FileObject`` you can easily generate/retrieve a version with::
 So, if you need to generate/retrieve the admin thumbnail for an Image, you can type::
 
     from filebrowser.settings import ADMIN_THUMBNAIL
-    obj.image.version(ADMIN_THUMBNAIL).url
+    obj.image.version_generate(ADMIN_THUMBNAIL).url
+
+Placeholder
+-----------
+
+When developing on a locale machine or a development-server, you might not have all the images (resp. media-files) available that are on your production instance and downloading these files on a regular basis might not be an option.
+
+In that case, you might wanna use a placeholder instead of an image-version. You just need to define the ``PLACEHOLDER`` and overwrite the settings ``SHOW_PLACEHOLDER`` and/or ``FORCE_PLACEHOLDER`` (see :ref:`settingsplaceholder`).
 
 Management Commands
 ===================

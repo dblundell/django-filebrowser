@@ -33,7 +33,7 @@ URL that handles the media served from ``MEDIA_ROOT``::
 DIRECTORY (relative to ``MEDIA_ROOT``)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Main FileBrowser Directory. Leave empty in order to browse all files and folders within ``MEDIA_ROOT``::
+Main FileBrowser Directory. Leave empty in order to browse all files and folders within MEDIA_ROOT::
 
     DIRECTORY = getattr(settings, "FILEBROWSER_DIRECTORY", 'uploads/')
 
@@ -94,9 +94,17 @@ Versions
 VERSIONS_BASEDIR (relative to ``MEDIA_ROOT``)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+.. versionchanged:: 3.4.0
+
 Directory to save image versions (and thumbnails). If no directory is given, versions are stored at the same location as the original image::
 
     VERSIONS_BASEDIR = getattr(settings, 'FILEBROWSER_VERSIONS_BASEDIR', '')
+
+.. note::
+
+    In versions previous to FileBrowser 3.4, it was possible to have VERSION_BASEDIR placed at a path which was not browsed by FileBrowser (by placing VERSION_BASEDIR anywhere else than under DIRECTORY). 
+
+    However, this is not possible as of FileBrowser 3.4 because DIRECTORY variable is not used anymore and FileBrowser browses anything under MEDIA_ROOT. If you don't want FileBrowser to browse/display the contents of VERSION_BASEDIR, make this directory *hidden*.
 
 VERSIONS
 ^^^^^^^^
@@ -126,18 +134,37 @@ The version being used as the admin-thumbnail::
 
     ADMIN_THUMBNAIL = getattr(settings, 'FILEBROWSER_ADMIN_THUMBNAIL', 'admin_thumbnail')
 
+.. _settingsplaceholder:
+
+PLACEHOLDER
+^^^^^^^^^^^
+
+Path to placeholder image (relative to MEDIA_ROOT)::
+
+    PLACEHOLDER = getattr(settings, "FILEBROWSER_PLACEHOLDER", "")
+
+SHOW_PLACEHOLDER
+^^^^^^^^^^^^^^^^
+
+Show Placeholder (instead of a Version) if the original image does not exist::
+
+    SHOW_PLACEHOLDER = getattr(settings, "FILEBROWSER_SHOW_PLACEHOLDER", False)
+
+FORCE_PLACEHOLDER
+^^^^^^^^^^^^^^^^^
+
+Always show placeholder (even if the original image exists)::
+
+    FORCE_PLACEHOLDER = getattr(settings, "FILEBROWSER_FORCE_PLACEHOLDER", False)
+
 Extra Settings
 --------------
 
 SAVE_FULL_URL
 ^^^^^^^^^^^^^
 
-.. versionchanged:: 3.3
-    Default value has changed from ``True`` to ``False``.
-
-``True`` to save the full URL to your model fields. ``False`` to save the URL relative to MEDIA_URL::
-
-    SAVE_FULL_URL = getattr(settings, "FILEBROWSER_SAVE_FULL_URL", False)
+.. deprecated:: 3.4.0
+    With custom storage engines, saving the full URL (including MEDIA_ROOT) doesn´t make sense anymore. Moreover, removing this settings allows for easily replacing a FileBrowseField with Djangos File- or ImageField.
 
 STRICT_PIL
 ^^^^^^^^^^
@@ -205,12 +232,16 @@ Options are: ``asc`` or ``desc``
 SEARCH_TRAVERSE
 ^^^^^^^^^^^^^^^
 
+.. versionadded:: 3.3
+
 ``True``, if you want to traverse all subdirectories when searching. Please note that with thousands of files/directories, this might take a while::
 
     SEARCH_TRAVERSE = getattr(settings, "FILEBROWSER_SEARCH_TRAVERSE", False)
 
 DEFAULT_PERMISSIONS
 ^^^^^^^^^^^^^^^^^^^
+
+.. versionadded:: 3.3
 
 Default Upload and Version Permissions::
 

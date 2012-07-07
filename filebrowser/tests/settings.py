@@ -7,7 +7,7 @@ import os
 from django.test import TestCase
 from django.contrib.auth.models import User
 
-# PYTHON IMPORTS
+# FILEBROWSER IMPORTS
 from filebrowser.settings import *
 
 
@@ -27,6 +27,8 @@ class SettingsTests(TestCase):
         Test that ``MEDIA_ROOT`` plus ``DIRECTORY`` exists.
         """
         self.assertEqual(os.path.exists(os.path.join(MEDIA_ROOT,DIRECTORY)), 1)
+        # Check for trailing slash
+        self.assertEqual(os.path.basename(DIRECTORY), '')
     
     def test_path_filebrowser_media(self):
         """
@@ -54,18 +56,18 @@ class SettingsTests(TestCase):
         for item in ADMIN_VERSIONS:
             self.assertIn(item, VERSIONS)
     
-    def test_save_full_url(self):
-        """
-        Test if ``SAVE_FULL_URL`` is in ``True, False``.
-        """
-        self.assertIn(SAVE_FULL_URL, [True, False])
-    
     def test_strict_pil(self):
         """
         Test if ``STRICT_PIL`` is in ``True, False``.
         """
         self.assertIn(STRICT_PIL, [True, False])
-    
+
+    def test_normalize_filename(self):
+        """
+        Test if ``NORMALIZE_FILENAME`` is in ``True, False``.
+        """
+        self.assertIn(NORMALIZE_FILENAME, [True, False])
+
     def test_convert_filename(self):
         """
         Test if ``CONVERT_FILENAME`` is in ``True, False``.

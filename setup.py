@@ -1,25 +1,31 @@
+import os
+import codecs
 from setuptools import setup, find_packages
+
+def read(fname):
+    return codecs.open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 setup(
     name='django-filebrowser',
-    version='3.3.1',
-    description='Media-Management with Grappelli',
-    author='Patrick Kranzlmueller',
-    author_email='patrick@vonautomatisch.at',
-    url='https://github.com/sehmaschine/django-filebrowser',
-    license = 'BSD',
+    version='3.4.3',
+    description='Media-Management with django admin',
+    long_description = read('README.rst'),
+    author='Patrick Kranzlmueller, Axel Swoboda, Vaclav Mikolasek (vonautomatisch)',
+    author_email='office@vonautomatisch.at',
+    url = 'http://django-filebrowser.readthedocs.org',
     download_url='',
     packages=find_packages(),
     include_package_data=True,
-    zip_safe=False,
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 5 - Production/Stable',
         'Environment :: Web Environment',
         'Framework :: Django',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: BSD License',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
-        'Framework :: Django',
-    ]
+    ],
+    zip_safe = False,
+    install_requires = [
+    ],
 )

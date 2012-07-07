@@ -24,7 +24,7 @@
     {% endifequal %}
 {% endblock %}
 
-<!-- COLTYPE/BODYCLASS-- >
+<!-- COLTYPE/BODYCLASS -->
 {% block bodyclass %}change-list filebrowser{% if query.pop %} popup{% endif %}{% endblock %}
 {% block content-class %}content-flexible{% endblock %}
 
@@ -32,7 +32,7 @@
 {% block breadcrumbs %}{% endblock %}
 
 <!-- OBJECT-TOOLS -->
-{% block object-tools %}{% endblock %}
+{% block object-tools %}{{ image_version.path }}{% endblock %}
 
 <!-- CONTENT -->
 {% block content %}
@@ -43,7 +43,7 @@
         <script type="text/javascript" charset="utf-8">
             (function($) {
                 $(document).ready(function() {
-                    FileSubmit('{{ image_version.url_save }}', '{{ thumbnail_version.url }}', '{{ image_version.filetype }}');
+                    FileSubmit('{{ image_version.path }}', '{{ image_version.url }}', '{{ image_version.filetype }}');
                 });
             })(django.jQuery);
         </script>

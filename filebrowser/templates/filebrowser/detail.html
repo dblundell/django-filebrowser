@@ -46,12 +46,12 @@
             {% if fileobject.filetype == "Image" %}
             <fieldset class="module aligned collapse open">
                 <h2>{% trans "Edit" %}</h2>
-                <div class="form-row {% if form.transpose.errors %}errors{% endif %}">
+                <div class="form-row {% if form.custom_action.errors %}errors{% endif %}">
                     <div>
-					    <label class="required" for="id_transpose">{{ form.transpose.label }}</label>
-                        {{ form.transpose }}
-                        {% if form.transpose.errors %}<ul class="errorlist">{{ form.transpose.errors }}</ul>{% endif %}
-                        {% if form.transpose.help_text %}<p class="help">{{ form.transpose.help_text|safe }}</p>{% endif %}
+					    <label class="required" for="id_custom_action">{{ form.custom_action.label }}</label>
+                        {{ form.custom_action }}
+                        {% if form.custom_action.errors %}<ul class="errorlist">{{ form.transpose.errors }}</ul>{% endif %}
+                        {% if form.custom_action.help_text %}<p class="help">{{ form.transpose.help_text|safe }}</p>{% endif %}
                     </div>
                 </div>
             </fieldset>
@@ -135,7 +135,7 @@
             {% endif %}
             <div class="submit-row">
 				<p class="deletelink-box">
-                	<a href="{% url fb_delete_confirm %}{% query_string %}" class="deletelink">{% trans "Delete" %}</a>
+                	<a href="{% url filebrowser:fb_delete_confirm %}{% query_string %}" class="deletelink">{% trans "Delete" %}</a>
 				</p>
                 <input type="submit" value="{% trans 'Save' %}" class="default" />
                 <input type="submit" value="{% trans 'Save and continue editing' %}" name="_continue" />

@@ -169,8 +169,7 @@ Number of filtered files, based on ``files_walk_filtered``::
 
 When browsing a directory on the server, you get a ``FileObject`` (see ``base.py``) for every file within that directory. The ``FileObject`` is also returned when using the ``FileBrowseField``::
 
-    fileobject = FileObject("/absolute/server/path/to/file.ext")
-    fileobject = FileObject("relative/server/path/to/file.ext", relative=True)
+    fileobject = FileObject("relative/server/path/to/storage/location/file.ext")
 
 For the examples below we use::
 
@@ -260,8 +259,7 @@ Server path to the file/folder, relative to ``MEDIA_ROOT``::
 ^^^^^^^^^^^^
 
 .. deprecated:: 3.3
-
-see ``url`` instead.
+    Use ``url`` instead.
 
 ``url``
 ^^^^^^^
@@ -315,6 +313,14 @@ Image height in px::
 
     >>> print fileobject.height
     750
+
+``aspectratio``
+^^^^^^^^^^^^^^^
+
+Aspect ratio (float format)::
+
+    >>> print fileobject.aspectratio
+    1.33534908
 
 ``orientation``
 ^^^^^^^^^^^^^^^

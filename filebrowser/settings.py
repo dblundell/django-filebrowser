@@ -13,11 +13,13 @@ try:
     DEFAULT_URL_TINYMCE = tinymce.settings.JS_BASE_URL + '/'
     DEFAULT_PATH_TINYMCE = tinymce.settings.JS_ROOT + '/'
 except ImportError:
-    DEFAULT_URL_TINYMCE = settings.ADMIN_MEDIA_PREFIX + "tinymce/jscripts/tiny_mce/"
+    DEFAULT_URL_TINYMCE = settings.STATIC_URL + "admin/tinymce/jscripts/tiny_mce/"
     DEFAULT_PATH_TINYMCE = os.path.join(settings.STATIC_ROOT, 'admin/tinymce/jscripts/tiny_mce/')
 
 # PATH AND URL SETTINGS
-# Main Media Settings
+# Main Media Settings 
+# WARNING: FILEBROWSER_MEDIA_ROOT and FILEBROWSER_MEDIA_URL will be removed in the next major release of Filebrowser.
+# Read the documentation on FileBrowser's storages (http://readthedocs.org/docs/django-filebrowser/en/latest/file_storages.html)
 MEDIA_ROOT = getattr(settings, "FILEBROWSER_MEDIA_ROOT", settings.MEDIA_ROOT)
 MEDIA_URL = getattr(settings, "FILEBROWSER_MEDIA_URL", settings.MEDIA_URL)
 # Main FileBrowser Directory. This has to be a directory within MEDIA_ROOT.
@@ -34,6 +36,7 @@ PATH_TINYMCE = getattr(settings, "FILEBROWSER_PATH_TINYMCE", DEFAULT_PATH_TINYMC
 # EXTENSIONS AND FORMATS
 # Allowed Extensions for File Upload. Lower case is important.
 EXTENSIONS = getattr(settings, "FILEBROWSER_EXTENSIONS", {
+    'Folder': [''],
     'Image': ['.jpg','.jpeg','.gif','.png','.tif','.tiff'],
     'Document': ['.pdf','.doc','.rtf','.txt','.xls','.csv'],
     'Video': ['.mov','.wmv','.mpeg','.mpg','.avi','.rm'],
@@ -70,11 +73,15 @@ ADMIN_VERSIONS = getattr(settings, 'FILEBROWSER_ADMIN_VERSIONS', ['thumbnail', '
 # Which Version should be used as Admin-thumbnail.
 ADMIN_THUMBNAIL = getattr(settings, 'FILEBROWSER_ADMIN_THUMBNAIL', 'admin_thumbnail')
 
+# PLACEHOLDER
+# Path to placeholder image
+PLACEHOLDER = getattr(settings, "FILEBROWSER_PLACEHOLDER", "")
+# Show Placeholder if the original image does not exist
+SHOW_PLACEHOLDER = getattr(settings, "FILEBROWSER_SHOW_PLACEHOLDER", False)
+# Always show placeholder (even if the original image exists)
+FORCE_PLACEHOLDER = getattr(settings, "FILEBROWSER_FORCE_PLACEHOLDER", False)
+
 # EXTRA SETTINGS
-# True to save the URL including MEDIA_URL to your model fields
-# or False (default) to save path relative to MEDIA_URL.
-# Note: Full URL does not necessarily means absolute URL.
-SAVE_FULL_URL = getattr(settings, "FILEBROWSER_SAVE_FULL_URL", False)
 # If set to True, the FileBrowser will not try to import a mis-installed PIL.
 STRICT_PIL = getattr(settings, 'FILEBROWSER_STRICT_PIL', False)
 # PIL's Error "Suspension not allowed here" work around:
@@ -88,6 +95,9 @@ for exts in EXTENSIONS.values():
 EXCLUDE = getattr(settings, 'FILEBROWSER_EXCLUDE', (r'_(%(exts)s)_.*_q\d{1,3}\.(%(exts)s)' % {'exts': ('|'.join(EXTENSION_LIST))},))
 # Max. Upload Size in Bytes.
 MAX_UPLOAD_SIZE = getattr(settings, "FILEBROWSER_MAX_UPLOAD_SIZE", 10485760)
+# Normalize filename and remove all non-alphanumeric characters
+# except for underscores, spaces & dashes.
+NORMALIZE_FILENAME = getattr(settings, "FILEBROWSER_NORMALIZE_FILENAME", False)
 # Convert Filename (replace spaces and convert to lowercase)
 CONVERT_FILENAME = getattr(settings, "FILEBROWSER_CONVERT_FILENAME", True)
 # Max. Entries per Page
@@ -102,9 +112,9 @@ DEFAULT_SORTING_ORDER = getattr(settings, "FILEBROWSER_DEFAULT_SORTING_ORDER", "
 # regex to clean dir names before creation
 FOLDER_REGEX = getattr(settings, "FILEBROWSER_FOLDER_REGEX", r'^[\w._/-]+$')
 # Traverse directories when searching
-SEARCH_TRAVERSE = getattr(settings, "FILEBROWSER_SEARCH_TRAVERSE", True)
+SEARCH_TRAVERSE = getattr(settings, "FILEBROWSER_SEARCH_TRAVERSE", False)
 # Default Upload and Version Permissions
-DEFAULT_PERMISSIONS = getattr(settings, "FILEBROWSER_DEFAULT_PERMISSIONS", 0664)
+DEFAULT_PERMISSIONS = getattr(settings, "FILEBROWSER_DEFAULT_PERMISSIONS", 0755)
 
 # EXTRA TRANSLATION STRINGS
 # The following strings are not availabe within views or templates
